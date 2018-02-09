@@ -1,0 +1,107 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd"
+		default-autowire="byName">
+
+<!--
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:ws="http://jax-ws.dev.java.net/spring/core" xmlns:wss="http://jax-ws.dev.java.net/spring/servlet"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+			http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+			http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+			http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+			http://jax-ws.dev.java.net/spring/core http://jax-ws.dev.java.net/spring/core.xsd
+			http://jax-ws.dev.java.net/spring/servlet http://jax-ws.dev.java.net/spring/servlet.xsd
+			http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd"
+	default-autowire="byName">
+-->
+
+	<context:component-scan base-package="com.jgpid.oauth2jwt">
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+
+	<jpa:repositories base-package="com.jgpid.oauth2jwt.repository" />
+
+	<!-- Audit and Security -->
+	<!-- jpa:auditing auditor-aware-ref="auditorAware" />
+	<bean id="auditorAware" class="SecurityAuditorAware" / -->
+
+	<context:spring-configured />
+
+	<aop:aspectj-autoproxy />
+
+	<!--  Exception Translation -->
+	<bean id="hibernateJpaDialect" class="org.springframework.orm.jpa.vendor.HibernateJpaDialect" />
+	<bean id="persistenceExceptionTranslationPostProcessor" class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" />
+
+	<!-- Database Connections -->
+	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="org.mariadb.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://127.0.0.1:3306/oauth2jwt"/>
+        <property name="username" value="oauth2jwt"/>
+        <property name="password" value="oauth2jwt"/>
+        <property name="maxIdle" value="16"/>
+        <property name="initialSize" value="16" />
+        <property name="maxTotal" value="32" />
+        <property name="poolPreparedStatements" value="true"/>
+	</bean>
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" >
+		<property name="persistenceUnitName" value="persistenceUnit" />
+		<property name="dataSource" ref="dataSource"/>
+		<property name="jpaDialect" ref="hibernateJpaDialect" />
+	</bean>
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager" >
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<!-- SMTP Mail -->
+	<!--
+	<bean class="org.springframework.mail.javamail.JavaMailSenderImpl" id="mailSender">
+        // <property name="host" value="smtp.mail.yahoo.com"/>
+        // <property name="port" value="465" />
+        // <property name="username" value="donotreply.mycompany@yahoo.com" />
+        // <property name="password" value="accountPassword" />
+        <property name="javaMailProperties">
+        	<props>
+        		<prop key="mail.transport.protocol">smtps</prop>
+        		<prop key="mail.smtps.auth">true</prop>
+        		<prop key="mail.smtps.starttls.enable">true</prop>
+        		// <prop key="mail.smtps.ssl.enable">true</prop>
+        		<prop key="mail.smtps.ssl.checkserveridentity">true</prop>
+        		<prop key="mail.smtps.ssl.trust">*</prop>
+        		// <prop key="mail.debug">true</prop>
+        	</props>
+        </property>
+    </bean>
+    -->
+
+    <!-- Velocity Templating Engine -->
+    <!-- Velocity do not recognise Windows File separator well, used / instead \ -->
+    <!-- bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+    	<property name="velocityProperties">
+    		<value>
+    			resource.loader=file
+    			file.resource.loader.class=org.apache.velocity.runtime.resource.loader.FileResourceLoader
+    			file.resource.loader.path=${intellisys.pos.home:classpath}/data/velocity_template
+    		</value>
+    	</property>
+    </bean -->
+</beans>

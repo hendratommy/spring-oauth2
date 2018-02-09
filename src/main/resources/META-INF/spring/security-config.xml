@@ -1,0 +1,186 @@
+<beans:beans xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:oauth2="http://www.springframework.org/schema/security/oauth2"
+             xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+             xmlns="http://www.springframework.org/schema/security"
+             xmlns:util="http://www.springframework.org/schema/util"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+     http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+	 http://www.springframework.org/schema/security/oauth2 http://www.springframework.org/schema/security/spring-security-oauth2.xsd
+     http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <http pattern="/api/**" authentication-manager-ref="userAuthenticationManager"
+          entry-point-ref="oauthAuthenticationEntryPoint" create-session="never" use-expressions="true">
+        <cors configuration-source-ref="corsSource"/>
+        <!-- intercept-url pattern="/api" access="permitAll()"/ -->
+        <intercept-url pattern="/api/**" access="isAuthenticated()"/>
+        <intercept-url pattern="/api/errors/**" access="permitAll()"/>
+        <intercept-url pattern="/api/is-authenticated" access="isAuthenticated()"/>
+        <!-- disable csrf protection -->
+        <csrf disabled="true"/>
+
+        <anonymous enabled="false"/>
+        <custom-filter ref="resourceServerFilter" before="PRE_AUTH_FILTER"/>
+        <access-denied-handler ref="oauthAccessDeniedHandler"/>
+    </http>
+
+
+    <!-- Basic Required - START -->
+    <beans:bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+    <beans:bean id="corsSource" class="org.springframework.web.cors.UrlBasedCorsConfigurationSource">
+        <beans:property name="corsConfigurations">
+            <beans:map>
+                <beans:entry key="/**" value-ref="restCorsConfig"/>
+            </beans:map>
+        </beans:property>
+    </beans:bean>
+
+    <beans:bean id="restCorsConfig" class="org.springframework.web.cors.CorsConfiguration">
+        <beans:property name="allowedOrigins" value="*"/>
+        <beans:property name="allowedHeaders" value="*"/>
+        <beans:property name="allowedMethods" value="*"/>
+        <beans:property name="allowCredentials" value="true"/>
+    </beans:bean>
+
+    <authentication-manager id="clientAuthenticationManager">
+        <authentication-provider user-service-ref="clientDetailsUserService"/>
+    </authentication-manager>
+
+    <authentication-manager id="userAuthenticationManager">
+        <authentication-provider user-service-ref="customUserDetailService">
+            <password-encoder ref="passwordEncoder"/>
+        </authentication-provider>
+    </authentication-manager>
+
+    <beans:bean id="customUserDetailService" class="com.jgpid.oauth2jwt.security.CustomUserDetailService"/>
+    <!-- BASIC REQUIRED - END -->
+
+    <beans:bean id="oauthAuthenticationEntryPoint"
+                class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint"/>
+
+    <beans:bean id="oauthAccessDeniedHandler"
+                class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler"/>
+
+    <http pattern="/token/**" create-session="stateless" authentication-manager-ref="clientAuthenticationManager"
+          use-expressions="true">
+        <cors configuration-source-ref="corsSource"/>
+        <csrf disabled="true"/>
+        <intercept-url pattern="/token/**" access="isFullyAuthenticated()"/>
+        <anonymous enabled="false"/>
+        <http-basic entry-point-ref="clientAuthenticationEntryPoint"/>
+        <custom-filter before="BASIC_AUTH_FILTER" ref="clientCredentialsTokenEndpointFilter"/>
+        <access-denied-handler ref="oauthAccessDeniedHandler"/>
+    </http>
+
+    <http pattern="/authorize/**" use-expressions="true">
+        <cors configuration-source-ref="corsSource"/>
+        <csrf disabled="true"/>
+        <intercept-url pattern="/authorize/**" access="isFullyAuthenticated()"/>
+        <anonymous enabled="false"/>
+        <http-basic entry-point-ref="clientAuthenticationEntryPoint"/>
+        <access-denied-handler ref="oauthAccessDeniedHandler"/>
+    </http>
+
+    <beans:bean id="tokenServices" class="com.jgpid.oauth2jwt.security.CustomTokenServices">
+        <beans:property name="tokenStore" ref="tokenStore"/>
+        <beans:property name="supportRefreshToken" value="true"/>
+        <beans:property name="accessTokenValiditySeconds" value="43200"/>
+        <beans:property name="clientDetailsService" ref="clientDetailsService"/>
+        <beans:property name="tokenEnhancer" ref="tokenEnhancerChain" />
+    </beans:bean>
+    <beans:bean id="tokenStore" class="org.springframework.security.oauth2.provider.token.store.JwtTokenStore">
+        <beans:constructor-arg index="0" ref="customJwtAccessConverter" />
+    </beans:bean>
+
+    <!-- START: spring-security-jwt -->
+    <beans:bean id="customJwtAccessConverter" class="com.jgpid.oauth2jwt.security.CustomJwtAccessTokenConverter">
+        <beans:property name="signingKey" value="fb3ba7250a83158a0119896e706efa7c" />
+    </beans:bean>
+    <beans:bean id="tokenEnhancerChain" class="org.springframework.security.oauth2.provider.token.TokenEnhancerChain">
+        <beans:property name="tokenEnhancers">
+            <util:list>
+                <beans:ref bean="customJwtAccessConverter" />
+            </util:list>
+        </beans:property>
+    </beans:bean>
+    <!-- END: spring-security-jwt -->
+
+    <beans:bean id="approvalStore" class="org.springframework.security.oauth2.provider.approval.TokenApprovalStore">
+        <beans:property name="tokenStore" ref="tokenStore"/>
+    </beans:bean>
+
+    <beans:bean id="userApprovalHandler"
+                class="org.springframework.security.oauth2.provider.approval.ApprovalStoreUserApprovalHandler">
+        <beans:property name="approvalStore" ref="approvalStore"/>
+        <beans:property name="clientDetailsService" ref="clientDetailsService"/>
+        <beans:property name="requestFactory">
+            <beans:bean class="org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory">
+                <beans:constructor-arg index="0" ref="clientDetailsService"/>
+            </beans:bean>
+        </beans:property>
+    </beans:bean>
+
+    <oauth2:authorization-server token-services-ref="tokenServices" client-details-service-ref="clientDetailsService"
+                                user-approval-handler-ref="userApprovalHandler" token-endpoint-url="/token"
+                                authorization-endpoint-url="/authorize">
+        <oauth2:authorization-code/>
+        <oauth2:implicit/>
+        <oauth2:refresh-token/>
+        <oauth2:client-credentials/>
+        <oauth2:password/>
+    </oauth2:authorization-server>
+
+    <oauth2:resource-server id="resourceServerFilter" resource-id="admin-api" token-services-ref="tokenServices"/>
+
+    <beans:bean id="clientCredentialsTokenEndpointFilter"
+                class="org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter">
+        <beans:property name="authenticationManager" ref="clientAuthenticationManager"/>
+        <beans:property name="filterProcessesUrl" value="/token" />
+    </beans:bean>
+
+    <beans:bean id="clientAuthenticationEntryPoint"
+                class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint">
+        <beans:property name="typeName" value="Basic"/>
+    </beans:bean>
+
+    <beans:bean id="clientDetailsUserService"
+                class="com.jgpid.oauth2jwt.security.CustomClientDetailsUserDetailsService">
+        <beans:constructor-arg ref="clientDetailsService"/>
+    </beans:bean>
+
+    <!-- beans:bean id="clientDetailsService" class="org.springframework.security.oauth2.provider.client.JdbcClientDetailsService">
+        <beans:constructor-arg ref="dataSource"/>
+    </beans:bean -->
+    <beans:bean id="clientDetailsService" class="com.jgpid.oauth2jwt.service.OAuthClientService" />
+
+    <!-- Login Page -->
+    <beans:bean id="logoutSuccessHandler" class="com.jgpid.oauth2jwt.security.LogoutSuccessHandler"/>
+    <beans:bean id="authenticationSuccessHandler" class="com.jgpid.oauth2jwt.security.RequestAuthenticationSuccessHandler"/>
+    <beans:bean id="authenticationFailureHandler" class="com.jgpid.oauth2jwt.security.RequestAuthenticationFailureHandler"/>
+
+    <beans:bean id="customUsernamePasswordAuthenticationFilter"
+                class="com.jgpid.oauth2jwt.security.CustomUsernamePasswordAuthenticationFilter">
+        <beans:property name="authenticationManager" ref="userAuthenticationManager"/>
+        <beans:property name="userDetailsService" ref="customUserDetailService"/>
+        <beans:property name="authenticationSuccessHandler" ref="authenticationSuccessHandler"/>
+        <beans:property name="authenticationFailureHandler" ref="authenticationFailureHandler"/>
+        <beans:property name="filterProcessesUrl" value="/login"/>
+    </beans:bean>
+
+    <http entry-point-ref="authenticationEntryPoint">
+        <cors configuration-source-ref="corsSource"/>
+        <intercept-url pattern="/resources/**" access="permitAll()"/>
+        <intercept-url pattern="/login" access="permitAll()"/>
+        <!-- disable csrf protection -->
+        <csrf disabled="true"/>
+        <custom-filter ref="customUsernamePasswordAuthenticationFilter" position="FORM_LOGIN_FILTER"/>
+        <logout logout-url="/logout" invalidate-session="true" success-handler-ref="logoutSuccessHandler"
+                delete-cookies="JSESSIONID"/>
+        <anonymous enabled="true"/>
+    </http>
+
+    <!-- Audit -->
+    <beans:bean id="auditorAware" class="com.jgpid.oauth2jwt.security.SecurityAuditorAware"/>
+    <jpa:auditing auditor-aware-ref="auditorAware"/>
+</beans:beans>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+	<Appenders>
+		<Console name="ConsoleAppender" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{dd/MM/yyyy HH:mm:ss,SSS} %5p [%t] %c{1} - %m%n" />
+		</Console>
+		<RollingFile name="RollingFileAppender" fileName="d:/logs/oauth2jwt.log"
+			append="true" filePattern="d:/logs/oauth2jwt-%i.log">
+			<PatternLayout pattern="%d{dd/MM/yyyy HH:mm:ss,SSS} %5p [%t] %c{1} - %m%n" />
+			<Policies>
+				<SizeBasedTriggeringPolicy size="5000KB" />
+			</Policies>
+			<DefaultRolloverStrategy max="5" />
+		</RollingFile>
+		<RollingFile name="SqlRollingFileAppender" fileName="d:/logs/sql-oauth2jwt.log"
+			append="true" filePattern="d:/logs/sql-oauth2jwt-%i.log">
+			<PatternLayout pattern="%d{dd/MM/yyyy HH:mm:ss,SSS} %5p [%t] %c{1} - %m%n" />
+			<Policies>
+				<SizeBasedTriggeringPolicy size="5000KB" />
+			</Policies>
+			<DefaultRolloverStrategy max="5" />
+		</RollingFile>
+	</Appenders>
+
+	<Loggers>
+		<Logger name="com.jgpid.oauth2jwt" additivity="false" level="DEBUG">
+			<Appender-ref ref="RollingFileAppender" />
+			<Appender-ref ref="ConsoleAppender" />
+		</Logger>
+
+		<!-- START: Show SQL Statements - Disable in Production -->
+		<!--
+		<Logger name="org.hibernate.SQL" additivity="false" level="DEBUG">
+			<Appender-ref ref="ConsoleAppender" />
+			<Appender-ref ref="SqlRollingFileAppender" />
+		</Logger>
+		<Logger name="org.hibernate.type" additivity="false" level="TRACE">
+			<Appender-ref ref="SqlRollingFileAppender" />
+		</Logger>
+		-->
+		<!-- END: Show SQL Statements -->
+
+		<Root additivity="false" level="WARN">
+			<Appender-ref ref="RollingFileAppender" />
+			<Appender-ref ref="ConsoleAppender" />
+		</Root>
+	</Loggers>
+</Configuration>
