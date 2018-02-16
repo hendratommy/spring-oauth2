@@ -73,13 +73,14 @@
         <access-denied-handler ref="oauthAccessDeniedHandler"/>
     </http>
 
-    <http pattern="/authorize/**" use-expressions="true">
+    <http pattern="/authorize*" use-expressions="true">
         <cors configuration-source-ref="corsSource"/>
         <csrf disabled="true"/>
-        <intercept-url pattern="/authorize/**" access="isFullyAuthenticated()"/>
+        <intercept-url pattern="/authorize*" access="isFullyAuthenticated()"/>
         <anonymous enabled="false"/>
         <http-basic entry-point-ref="clientAuthenticationEntryPoint"/>
         <access-denied-handler ref="oauthAccessDeniedHandler"/>
+        <form-login login-page="/login" default-target-url="/authorize"/>
     </http>
 
     <beans:bean id="tokenServices" class="com.jgpid.oauth2jwt.security.CustomTokenServices">
@@ -87,20 +88,20 @@
         <beans:property name="supportRefreshToken" value="true"/>
         <beans:property name="accessTokenValiditySeconds" value="43200"/>
         <beans:property name="clientDetailsService" ref="clientDetailsService"/>
-        <beans:property name="tokenEnhancer" ref="tokenEnhancerChain" />
+        <beans:property name="tokenEnhancer" ref="tokenEnhancerChain"/>
     </beans:bean>
     <beans:bean id="tokenStore" class="org.springframework.security.oauth2.provider.token.store.JwtTokenStore">
-        <beans:constructor-arg index="0" ref="customJwtAccessConverter" />
+        <beans:constructor-arg index="0" ref="customJwtAccessConverter"/>
     </beans:bean>
 
     <!-- START: spring-security-jwt -->
     <beans:bean id="customJwtAccessConverter" class="com.jgpid.oauth2jwt.security.CustomJwtAccessTokenConverter">
-        <beans:property name="signingKey" value="fb3ba7250a83158a0119896e706efa7c" />
+        <beans:property name="signingKey" value="fb3ba7250a83158a0119896e706efa7c"/>
     </beans:bean>
     <beans:bean id="tokenEnhancerChain" class="org.springframework.security.oauth2.provider.token.TokenEnhancerChain">
         <beans:property name="tokenEnhancers">
             <util:list>
-                <beans:ref bean="customJwtAccessConverter" />
+                <beans:ref bean="customJwtAccessConverter"/>
             </util:list>
         </beans:property>
     </beans:bean>
@@ -122,8 +123,9 @@
     </beans:bean>
 
     <oauth2:authorization-server token-services-ref="tokenServices" client-details-service-ref="clientDetailsService"
-                                user-approval-handler-ref="userApprovalHandler" token-endpoint-url="/token"
-                                authorization-endpoint-url="/authorize">
+                                 user-approval-handler-ref="userApprovalHandler" token-endpoint-url="/token"
+                                 authorization-endpoint-url="/authorize" check-token-endpoint-url="/check_token"
+                                 check-token-enabled="true">
         <oauth2:authorization-code/>
         <oauth2:implicit/>
         <oauth2:refresh-token/>
@@ -136,7 +138,7 @@
     <beans:bean id="clientCredentialsTokenEndpointFilter"
                 class="org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter">
         <beans:property name="authenticationManager" ref="clientAuthenticationManager"/>
-        <beans:property name="filterProcessesUrl" value="/token" />
+        <beans:property name="filterProcessesUrl" value="/token"/>
     </beans:bean>
 
     <beans:bean id="clientAuthenticationEntryPoint"
@@ -148,33 +150,20 @@
                 class="com.jgpid.oauth2jwt.security.CustomClientDetailsUserDetailsService">
         <beans:constructor-arg ref="clientDetailsService"/>
     </beans:bean>
-
-    <!-- beans:bean id="clientDetailsService" class="org.springframework.security.oauth2.provider.client.JdbcClientDetailsService">
-        <beans:constructor-arg ref="dataSource"/>
-    </beans:bean -->
-    <beans:bean id="clientDetailsService" class="com.jgpid.oauth2jwt.service.OAuthClientService" />
+    <beans:bean id="clientDetailsService" class="com.jgpid.oauth2jwt.service.OAuthClientService"/>
 
     <!-- Login Page -->
     <beans:bean id="logoutSuccessHandler" class="com.jgpid.oauth2jwt.security.LogoutSuccessHandler"/>
-    <beans:bean id="authenticationSuccessHandler" class="com.jgpid.oauth2jwt.security.RequestAuthenticationSuccessHandler"/>
-    <beans:bean id="authenticationFailureHandler" class="com.jgpid.oauth2jwt.security.RequestAuthenticationFailureHandler"/>
-
-    <beans:bean id="customUsernamePasswordAuthenticationFilter"
-                class="com.jgpid.oauth2jwt.security.CustomUsernamePasswordAuthenticationFilter">
-        <beans:property name="authenticationManager" ref="userAuthenticationManager"/>
-        <beans:property name="userDetailsService" ref="customUserDetailService"/>
-        <beans:property name="authenticationSuccessHandler" ref="authenticationSuccessHandler"/>
-        <beans:property name="authenticationFailureHandler" ref="authenticationFailureHandler"/>
-        <beans:property name="filterProcessesUrl" value="/login"/>
-    </beans:bean>
+    <beans:bean id="authenticationSuccessHandler"
+                class="com.jgpid.oauth2jwt.security.RequestAuthenticationSuccessHandler"/>
+    <beans:bean id="authenticationEntryPoint" class="com.jgpid.oauth2jwt.security.RequestAuthenticationEntryPoint"/>
 
     <http entry-point-ref="authenticationEntryPoint">
         <cors configuration-source-ref="corsSource"/>
-        <intercept-url pattern="/resources/**" access="permitAll()"/>
-        <intercept-url pattern="/login" access="permitAll()"/>
-        <!-- disable csrf protection -->
+        <intercept-url pattern="/resources*" access="permitAll()"/>
+        <intercept-url pattern="/login*" access="permitAll()"/>
         <csrf disabled="true"/>
-        <custom-filter ref="customUsernamePasswordAuthenticationFilter" position="FORM_LOGIN_FILTER"/>
+        <form-login login-page="/login" default-target-url="/user"/>
         <logout logout-url="/logout" invalidate-session="true" success-handler-ref="logoutSuccessHandler"
                 delete-cookies="JSESSIONID"/>
         <anonymous enabled="true"/>

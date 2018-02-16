@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE tiles-definitions PUBLIC
+	"-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+	"http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+	<definition extends="standard-layout" name="/login">
+		<put-attribute name="title" value="Login - spring-oauth2-jwt"/>
+		<put-attribute name="page" value="/WEB-INF/views/login.jsp"/>
+	</definition>
+	<definition extends="standard-layout" name="/user">
+		<put-attribute name="title" value="Welcome - spring-oauth2-jwt"/>
+		<put-attribute name="page" value="/WEB-INF/views/welcome.jsp"/>
+	</definition>
+</tiles-definitions>

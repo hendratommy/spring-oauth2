@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.ClientRegistrationException;
+import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,11 @@ public class OAuthClientService implements ClientDetailsService {
     @Override
     public ClientDetails loadClientByClientId(String clientId) throws ClientRegistrationException {
         logger.debug("Load client by client_id: " + clientId);
-        return oAuthClientRepository.findOne(clientId);
+        ClientDetails clientDetails = oAuthClientRepository.findOne(clientId);
+        if (clientDetails == null) {
+            logger.debug("Client not found [clientId: " + clientId + "]");
+            return new BaseClientDetails();
+        }
+        return clientDetails;
     }
 }

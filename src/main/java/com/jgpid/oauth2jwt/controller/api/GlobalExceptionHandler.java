@@ -1,4 +1,4 @@
-package com.jgpid.oauth2jwt.controller;
+package com.jgpid.oauth2jwt.controller.api;
 
 import java.sql.SQLException;
 import java.util.HashMap;

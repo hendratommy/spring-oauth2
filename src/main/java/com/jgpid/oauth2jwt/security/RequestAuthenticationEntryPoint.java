@@ -22,7 +22,6 @@ import org.springframework.integration.support.json.Jackson2JsonObjectMapper;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
-@Component("authenticationEntryPoint")
 public class RequestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 	private static final Logger logger = LoggerFactory.getLogger(RequestAuthenticationEntryPoint.class);
 
